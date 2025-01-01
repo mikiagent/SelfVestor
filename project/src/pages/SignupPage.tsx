@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, UserPlus } from 'lucide-react';
+import { Mail, UserPlus } from 'lucide-react';
+import { PasswordInput } from '../components/PasswordInput';
 
 export function SignupPage() {
   const [email, setEmail] = useState('');
@@ -60,39 +61,20 @@ export function SignupPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1 relative">
-                <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
+            <PasswordInput
+              value={password}
+              onChange={setPassword}
+              required
+              minLength={6}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <div className="mt-1 relative">
-                <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
+            <PasswordInput
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              label="Confirm Password"
+              required
+              minLength={6}
+            />
 
             <div>
               <button

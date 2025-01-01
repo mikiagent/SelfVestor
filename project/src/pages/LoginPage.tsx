@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, LogIn } from 'lucide-react';
+import { PasswordInput } from '../components/PasswordInput';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { signInWithEmail, signInWithGoogle } = useAuth();
+  const { signInWithEmail, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setError('');
       await signInWithEmail(email, password);
-      navigate('/dashboard');
     } catch (error) {
       setError('Failed to sign in. Please check your credentials.');
     }
@@ -22,12 +29,14 @@ export function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
+      setError('');
       await signInWithGoogle();
-      navigate('/dashboard');
     } catch (error) {
       setError('Failed to sign in with Google.');
     }
   };
+
+  if (user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -62,21 +71,11 @@ export function LoginPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1 relative">
-                <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
+            <PasswordInput
+              value={password}
+              onChange={setPassword}
+              required
+            />
 
             <div>
               <button
