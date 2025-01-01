@@ -1,24 +1,24 @@
 import { Todo } from '../types/todo';
 import { PRIORITY_MULTIPLIERS } from './priorityUtils';
 
-const CATEGORY_WEIGHTS = {
-  daily: 0.5,
-  weekly: 0.3,
-  monthly: 0.2
-} as const;
-
-// Calculate single task weight
+// Calculate single task weight based on batches and priority
 function getTaskWeight(todo: Todo): number {
-  return CATEGORY_WEIGHTS[todo.category] * 
-         PRIORITY_MULTIPLIERS[todo.priority] * 
-         (1 / todo.total);
+  // Each batch is treated as equivalent to a task with batch size of 1
+  const numberOfBatches = todo.batches.length;
+  
+  // Base weight is determined by the number of batches
+  const baseWeight = numberOfBatches;
+  
+  // Apply priority multiplier
+  return baseWeight * PRIORITY_MULTIPLIERS[todo.priority];
 }
 
 // Calculate all task values in one pass
 export function calculateTaskValues(todos: Todo[], monthlyBudget: number): Map<string, number> {
   const taskValues = new Map<string, number>();
+  const weeklyBudget = monthlyBudget / 4; // Weekly spending allowance
   
-  // Calculate total weight in first pass
+  // Calculate total weight across all tasks
   const totalWeight = todos.reduce((sum, todo) => 
     sum + getTaskWeight(todo), 0
   );
@@ -27,11 +27,13 @@ export function calculateTaskValues(todos: Todo[], monthlyBudget: number): Map<s
     return taskValues;
   }
 
-  // Calculate monetary values in second pass
+  // Calculate monetary values
   todos.forEach(todo => {
     const weight = getTaskWeight(todo);
-    const value = (weight / totalWeight) * monthlyBudget;
-    taskValues.set(todo.id, Number(value.toFixed(2)));
+    // Each batch's value is equal to the total task value divided by number of batches
+    const totalValue = (weight / totalWeight) * weeklyBudget;
+    const valuePerBatch = totalValue / todo.batches.length;
+    taskValues.set(todo.id, Number(valuePerBatch.toFixed(2)));
   });
 
   return taskValues;

@@ -7,15 +7,19 @@ import { useTaskValues } from '../hooks/useTaskValues';
 interface TodoListProps {
   todos: Todo[];
   category: TodoCategory;
-  onUpdateTodo: (id: string, completed: number) => void;
+  onUpdateTodo: (id: string, batchId: string) => void;
+  onUndoBatch: (id: string, batchId: string) => void;
   onDeleteTodo: (id: string) => void;
+  onEditTodo: (id: string, updates: Partial<Todo>) => void;
 }
 
 export function TodoList({ 
   todos, 
   category, 
-  onUpdateTodo, 
-  onDeleteTodo 
+  onUpdateTodo,
+  onUndoBatch,
+  onDeleteTodo,
+  onEditTodo
 }: TodoListProps) {
   const { budgetSummary } = useBudget();
   const taskValues = useTaskValues(todos, budgetSummary.spendingBudget);
@@ -30,7 +34,9 @@ export function TodoList({
           todo={todo}
           taskValue={taskValues.get(todo.id) || 0}
           onUpdate={onUpdateTodo}
+          onUndoBatch={onUndoBatch}
           onDelete={onDeleteTodo}
+          onEdit={onEditTodo}
         />
       ))}
     </div>

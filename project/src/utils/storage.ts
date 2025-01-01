@@ -1,5 +1,6 @@
 import { Todo } from '../types/todo';
 import { Settings, DEFAULT_SETTINGS } from '../types/settings';
+import { migrateData } from './migrations';
 
 const TODOS_KEY = 'progress-tracker-todos';
 const SETTINGS_KEY = 'progress-tracker-settings';
@@ -18,7 +19,9 @@ export function loadTodos(): Todo[] {
   
   try {
     const parsed = JSON.parse(stored);
-    return parsed.map((todo: any) => ({
+    // Migrate existing data to include batches
+    const migrated = migrateData(parsed);
+    return migrated.map(todo => ({
       ...todo,
       createdAt: new Date(todo.createdAt)
     }));

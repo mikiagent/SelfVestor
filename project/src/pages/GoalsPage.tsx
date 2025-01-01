@@ -11,7 +11,7 @@ import { useSettings } from '../hooks/useSettings';
 import { calculateProgress } from '../utils/progressCalculator';
 
 export function GoalsPage() {
-  const { todos, addTodo, updateTodo, deleteTodo } = useTodos();
+  const { todos, addTodo, updateTodo, undoBatch, deleteTodo, editTodo } = useTodos();
   const { budgetSummary } = useBudget();
   const { settings } = useSettings();
 
@@ -26,11 +26,33 @@ export function GoalsPage() {
 
       <div className="space-y-8">
         <CategorySection
-          title="Goals"
+          title="Daily Goals"
           category="daily"
           todos={todos}
           onUpdateTodo={updateTodo}
+          onUndoBatch={undoBatch}
           onDeleteTodo={deleteTodo}
+          onEditTodo={editTodo}
+        />
+
+        <CategorySection
+          title="Weekly Goals"
+          category="weekly"
+          todos={todos}
+          onUpdateTodo={updateTodo}
+          onUndoBatch={undoBatch}
+          onDeleteTodo={deleteTodo}
+          onEditTodo={editTodo}
+        />
+
+        <CategorySection
+          title="Monthly Goals"
+          category="monthly"
+          todos={todos}
+          onUpdateTodo={updateTodo}
+          onUndoBatch={undoBatch}
+          onDeleteTodo={deleteTodo}
+          onEditTodo={editTodo}
         />
       </div>
 

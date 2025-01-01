@@ -1,13 +1,22 @@
+import { Priority } from './priority';
+
 export type TodoCategory = 'daily' | 'weekly' | 'monthly';
-export type Priority = 1 | 2 | 3 | 4 | 5;
+
+export interface Batch {
+  id: string;
+  count: number;
+  completed: boolean;
+}
 
 export interface Todo {
   id: string;
   title: string;
   category: TodoCategory;
   priority: Priority;
-  remaining: number;
+  batches: Batch[];
+  batchSize: number;
   total: number;
+  remaining: number;
   createdAt: Date;
 }
 

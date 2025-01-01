@@ -1,5 +1,6 @@
 import React from 'react';
 import { ProgressStatus } from '../../types/progress';
+import { Trophy } from 'lucide-react';
 
 interface CalendarDayProps {
   date: Date;
@@ -23,25 +24,34 @@ export function CalendarDay({ date, progress, isCurrentMonth }: CalendarDayProps
 
   const status = getProgressStatus(progress);
   const statusColors = {
-    complete: 'bg-green-500',
-    partial: 'bg-yellow-500',
-    none: 'bg-gray-300'
+    complete: 'bg-green-100 border-green-300',
+    partial: 'bg-yellow-50 border-yellow-300',
+    none: 'bg-white border-gray-200'
   };
 
   return (
     <div 
       className={`
-        relative p-2 
+        relative p-2 border rounded-lg
+        ${statusColors[status]}
         ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
-        ${isToday ? 'ring-2 ring-blue-500 rounded-lg' : ''}
+        ${isToday ? 'ring-2 ring-blue-500' : ''}
+        transition-colors duration-200
       `}
     >
       <div className="flex flex-col items-center">
         <span className="text-sm mb-1">{date.getDate()}</span>
-        <div 
-          className={`w-2 h-2 rounded-full ${statusColors[status]}`} 
-          title={`Progress: ${progress?.toFixed(0)}%`}
-        />
+        {status === 'complete' && (
+          <Trophy className="w-4 h-4 text-green-600" />
+        )}
+        {status === 'partial' && progress !== undefined && (
+          <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-yellow-500 transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

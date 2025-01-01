@@ -1,78 +1,73 @@
-import { Todo, TodoCategory, TodoProgress } from '../types/todo';
-import { PRIORITY_MULTIPLIERS } from './priorityUtils';
+import { Todo, TodoProgress } from '../types/todo';
 import { Settings } from '../types/settings';
 
-export function calculateProgress(todos: Todo[], settings: Settings): TodoProgress {
+// Category weights for overall progress
+const CATEGORY_WEIGHTS = {
+  daily: 0.7,   // 70% weight
+  weekly: 0.2,  // 20% weight
+  monthly: 0.1  // 10% weight
+} as const;
+
+// Calculate progress for a specific category
+function calculateCategoryProgress(todos: Todo[], category: 'daily' | 'weekly' | 'monthly'): number {
+  const categoryTodos = todos.filter(todo => todo.category === category);
+  if (categoryTodos.length === 0) return 0;
+
+  // Calculate progress for each todo based on completed batches
+  const todoProgresses = categoryTodos.map(todo => {
+    const completedBatches = todo.batches.filter(batch => batch.completed);
+    const completedCount = completedBatches.reduce((sum, batch) => sum + batch.count, 0);
+    return completedCount / todo.total;
+  });
+
+  // Average progress across all todos in the category
+  return (todoProgresses.reduce((sum, progress) => sum + progress, 0) / todoProgresses.length) * 100;
+}
+
+// Calculate prorated requirements
+function getRequiredProgress(settings: Settings): { weekly: number; monthly: number } {
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   
-  const dayOfWeek = now.getDay();
-  const dayOfMonth = now.getDate();
+  // Calculate days since last weekly reset
+  let daysSinceWeeklyReset = now.getDay() - settings.weeklyResetDay;
+  if (daysSinceWeeklyReset < 0) daysSinceWeeklyReset += 7;
   
-  const weeklyRequirement = Math.min(
-    (dayOfWeek < settings.weeklyResetDay ? dayOfWeek + 7 : dayOfWeek) - settings.weeklyResetDay + 1,
-    7
-  ) / 7;
+  // Calculate days since last monthly reset
+  let daysSinceMonthlyReset = now.getDate() - settings.monthlyResetDay;
+  if (daysSinceMonthlyReset < 0) daysSinceMonthlyReset += daysInMonth;
   
-  const monthlyRequirement = Math.min(
-    (dayOfMonth < settings.monthlyResetDay ? dayOfMonth + daysInMonth : dayOfMonth) - settings.monthlyResetDay + 1,
-    daysInMonth
-  ) / daysInMonth;
-
-  const progress = {
-    daily: 0,
-    weekly: 0,
-    monthly: 0,
-    overall: 0,
+  return {
+    weekly: Math.min((daysSinceWeeklyReset + 1) / 7, 1) * 100,
+    monthly: Math.min((daysSinceMonthlyReset + 1) / daysInMonth, 1) * 100
   };
+}
 
-  const categoryTotals: Record<TodoCategory, { weighted: number; total: number }> = {
-    daily: { weighted: 0, total: 0 },
-    weekly: { weighted: 0, total: 0 },
-    monthly: { weighted: 0, total: 0 },
-  };
-
-  todos.forEach((todo) => {
-    const multiplier = PRIORITY_MULTIPLIERS[todo.priority];
-    const completed = todo.total - todo.remaining;
-    const weightedCompleted = completed * multiplier;
-    const weightedTotal = todo.total * multiplier;
-    
-    categoryTotals[todo.category].weighted += weightedCompleted;
-    categoryTotals[todo.category].total += weightedTotal;
-  });
-
+export function calculateProgress(todos: Todo[], settings: Settings): TodoProgress {
   // Calculate raw progress for each category
-  Object.entries(categoryTotals).forEach(([category, { weighted, total }]) => {
-    if (total > 0) {
-      progress[category as TodoCategory] = (weighted / total) * 100;
-    } else {
-      // If no tasks in category, set to 100%
-      progress[category as TodoCategory] = 100;
-    }
-  });
+  const dailyProgress = calculateCategoryProgress(todos, 'daily');
+  const weeklyProgress = calculateCategoryProgress(todos, 'weekly');
+  const monthlyProgress = calculateCategoryProgress(todos, 'monthly');
 
-  // Adjust weekly and monthly progress based on requirements
-  if (progress.weekly > weeklyRequirement * 100) {
-    progress.weekly = 100;
-  }
-  
-  if (progress.monthly > monthlyRequirement * 100) {
-    progress.monthly = 100;
-  }
+  // Get required progress based on current day
+  const { weekly: weeklyRequired, monthly: monthlyRequired } = getRequiredProgress(settings);
 
-  // Calculate overall progress
-  // If there are no daily tasks, use weekly and monthly progress
-  if (categoryTotals.daily.total === 0) {
-    progress.overall = (progress.weekly * 0.6 + progress.monthly * 0.4);
-  } else {
-    // Otherwise use standard weights with daily progress weighted more heavily
-    progress.overall = (
-      progress.daily * 0.5 +
-      progress.weekly * 0.3 +
-      progress.monthly * 0.2
-    );
-  }
+  // Check if meeting prorated requirements
+  const weeklyAdjusted = Math.min(weeklyProgress / weeklyRequired * 100, 100);
+  const monthlyAdjusted = Math.min(monthlyProgress / monthlyRequired * 100, 100);
 
-  return progress;
+  // Calculate overall progress using weighted contributions
+  const overall = Math.min(
+    100, // Cap at 100%
+    (CATEGORY_WEIGHTS.daily * dailyProgress) +
+    (CATEGORY_WEIGHTS.weekly * weeklyAdjusted) +
+    (CATEGORY_WEIGHTS.monthly * monthlyAdjusted)
+  );
+
+  return {
+    daily: dailyProgress,
+    weekly: weeklyProgress,
+    monthly: monthlyProgress,
+    overall
+  };
 }
