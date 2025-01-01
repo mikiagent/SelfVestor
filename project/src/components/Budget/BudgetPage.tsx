@@ -32,7 +32,7 @@ export function BudgetPage() {
       )}
 
       <div className="space-y-8">
-        <div>
+        <div className="relative pointer-events-auto" data-tutorial="add-transaction">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Add Transaction</h2>
           <AddTransactionForm onAdd={addTransaction} />
         </div>

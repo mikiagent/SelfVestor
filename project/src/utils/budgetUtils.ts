@@ -24,3 +24,11 @@ export function getBudgetStatus(summary: BudgetSummary): {
     };
   }
 }
+
+export function isBudgetSetup(summary: BudgetSummary): boolean {
+  return summary.totalIncome > 0 && (
+    summary.totalExpenses > 0 || 
+    summary.totalRent > 0 || 
+    summary.totalInvestments > 0
+  );
+}

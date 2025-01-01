@@ -1,12 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { Target, PiggyBank } from 'lucide-react';
 import { Header } from './Header';
-import { LogOut, Target, PiggyBank } from 'lucide-react';
+import { SettingsDropdown } from './Settings/SettingsDropdown';
 
 export function Navigation() {
-  const { logout } = useAuth();
-
   return (
     <nav className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,13 +40,7 @@ export function Navigation() {
               Budget
             </NavLink>
 
-            <button
-              onClick={logout}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
+            <SettingsDropdown />
           </div>
         </div>
       </div>
