@@ -1,19 +1,22 @@
 import React from 'react';
 import { ProgressStatus } from '../../types/progress';
 import { Trophy } from 'lucide-react';
+import { getProgressForDate } from '../../utils/progressStorage';
 
 interface CalendarDayProps {
   date: Date;
-  progress?: number;
   isCurrentMonth: boolean;
 }
 
-export function CalendarDay({ date, progress, isCurrentMonth }: CalendarDayProps) {
+export function CalendarDay({ date, isCurrentMonth }: CalendarDayProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const currentDate = new Date(date);
   currentDate.setHours(0, 0, 0, 0);
   const isToday = currentDate.getTime() === today.getTime();
+
+  // Get progress for this specific date
+  const progress = getProgressForDate(currentDate);
 
   const getProgressStatus = (progress?: number): ProgressStatus => {
     if (progress === undefined) return 'none';

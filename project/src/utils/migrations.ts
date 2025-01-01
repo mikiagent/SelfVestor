@@ -12,7 +12,7 @@ export function migrateTodo(todo: Partial<Todo>): Todo {
   const batches = [{
     id: `${Date.now()}-0`,
     count: total,
-    completed: total === (todo.remaining || 0)
+    completed: (todo.total || 0) === (todo.remaining || 0)
   }];
 
   return {

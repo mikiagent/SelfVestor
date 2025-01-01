@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Todo, TodoCategory, Priority, Batch } from '../types/todo';
 import { saveTodos, loadTodos } from '../utils/storage';
 import { updateCurrentProgress } from '../utils/progressStorage';
@@ -9,27 +9,44 @@ export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>(() => loadTodos());
   const settings = loadSettings();
 
+  // Save todos whenever they change
+  const persistTodos = useCallback((updatedTodos: Todo[]) => {
+    saveTodos(updatedTodos);
+    const progress = calculateProgress(updatedTodos, settings);
+    updateCurrentProgress(progress.overall);
+  }, [settings]);
+
+  // Check for resets and save on mount and unmount
   useEffect(() => {
-    saveTodos(todos);
     const progress = calculateProgress(todos, settings);
     updateCurrentProgress(progress.overall);
-  }, [todos, settings]);
 
-  const addTodo = (
-    title: string,
-    category: TodoCategory,
+    return () => {
+      persistTodos(todos);
+    };
+  }, [settings, persistTodos, todos]);
+
+  const addTodo = useCallback((
+    title: string, 
+    category: TodoCategory, 
     total: number,
     batchSize: number,
     priority: Priority
   ) => {
-    const batches: Batch[] = Array.from(
-      { length: Math.ceil(total / batchSize) },
-      (_, i) => ({
-        id: `${Date.now()}-${i}`,
-        count: Math.min(batchSize, total - i * batchSize),
+    const batches: Batch[] = [];
+    let remaining = total;
+    let batchIndex = 0;
+
+    while (remaining > 0) {
+      const count = Math.min(remaining, batchSize);
+      batches.push({
+        id: `${Date.now()}-${batchIndex}`,
+        count,
         completed: false
-      })
-    );
+      });
+      remaining -= count;
+      batchIndex++;
+    }
 
     const newTodo: Todo = {
       id: Date.now().toString(),
@@ -40,20 +57,22 @@ export function useTodos() {
       batchSize,
       total,
       remaining: total,
-      createdAt: new Date(),
+      createdAt: new Date()
     };
-    setTodos(prev => [...prev, newTodo]);
-  };
 
-  const updateTodo = (todoId: string, batchId: string) => {
+    setTodos(prev => [...prev, newTodo]);
+  }, []);
+
+  const updateTodo = useCallback((id: string, batchId: string) => {
     setTodos(prev => prev.map(todo => {
-      if (todo.id === todoId) {
+      if (todo.id === id) {
         const updatedBatches = todo.batches.map(batch => 
           batch.id === batchId ? { ...batch, completed: true } : batch
         );
-        const completedCount = updatedBatches.reduce((sum, batch) => 
-          sum + (batch.completed ? batch.count : 0), 0
-        );
+        const completedCount = updatedBatches
+          .filter(b => b.completed)
+          .reduce((sum, b) => sum + b.count, 0);
+        
         return {
           ...todo,
           batches: updatedBatches,
@@ -62,17 +81,18 @@ export function useTodos() {
       }
       return todo;
     }));
-  };
+  }, []);
 
-  const undoBatch = (todoId: string, batchId: string) => {
+  const undoBatch = useCallback((id: string, batchId: string) => {
     setTodos(prev => prev.map(todo => {
-      if (todo.id === todoId) {
+      if (todo.id === id) {
         const updatedBatches = todo.batches.map(batch => 
           batch.id === batchId ? { ...batch, completed: false } : batch
         );
-        const completedCount = updatedBatches.reduce((sum, batch) => 
-          sum + (batch.completed ? batch.count : 0), 0
-        );
+        const completedCount = updatedBatches
+          .filter(b => b.completed)
+          .reduce((sum, b) => sum + b.count, 0);
+        
         return {
           ...todo,
           batches: updatedBatches,
@@ -81,17 +101,31 @@ export function useTodos() {
       }
       return todo;
     }));
-  };
+  }, []);
 
-  const deleteTodo = (id: string) => {
-    setTodos(prev => prev.filter(todo => todo.id !== id));
-  };
-
-  const editTodo = (id: string, updates: Partial<Todo>) => {
-    setTodos(prev => prev.map(todo =>
+  const editTodo = useCallback((id: string, updates: Partial<Todo>) => {
+    setTodos(prev => prev.map(todo => 
       todo.id === id ? { ...todo, ...updates } : todo
     ));
-  };
+  }, []);
+
+  const deleteTodo = useCallback((id: string) => {
+    setTodos(prev => prev.filter(todo => todo.id !== id));
+  }, []);
+
+  const resetDailyGoals = useCallback(() => {
+    setTodos(prev => prev.map(todo => {
+      if (todo.category === 'daily') {
+        return {
+          ...todo,
+          batches: todo.batches.map(batch => ({ ...batch, completed: false })),
+          remaining: todo.total,
+          createdAt: new Date()
+        };
+      }
+      return todo;
+    }));
+  }, []);
 
   return {
     todos,
@@ -100,6 +134,6 @@ export function useTodos() {
     undoBatch,
     deleteTodo,
     editTodo,
-    setTodos
+    resetDailyGoals
   };
 }

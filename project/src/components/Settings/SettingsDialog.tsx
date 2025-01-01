@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { Settings } from '../../types/settings';
 import { TimezoneSelect } from '../TimezoneSelect';
 import { CurrencySelect } from './CurrencySelect';
 import { useSettings } from '../../hooks/useSettings';
+import { useTodos } from '../../hooks/useTodos';
+import { ConfirmDialog } from '../ConfirmDialog';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -12,7 +14,9 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   const { settings, saveSettings } = useSettings();
+  const { resetDailyGoals } = useTodos();
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   if (!isOpen) return null;
 
@@ -20,6 +24,11 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     e.preventDefault();
     saveSettings(localSettings);
     onClose();
+  };
+
+  const handleReset = () => {
+    resetDailyGoals();
+    setShowResetConfirm(false);
   };
 
   return (
@@ -80,6 +89,20 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
             </select>
           </div>
 
+          <div className="border-t pt-4 mt-4">
+            <button
+              type="button"
+              onClick={() => setShowResetConfirm(true)}
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Reset Daily Goals
+            </button>
+            <p className="text-xs text-gray-500 mt-1">
+              This will reset all daily goals to their initial state and save today's progress.
+            </p>
+          </div>
+
           <div className="flex justify-end space-x-2 pt-4">
             <button
               type="button"
@@ -97,6 +120,14 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           </div>
         </form>
       </div>
+
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        title="Reset Daily Goals"
+        message="Are you sure you want to reset all daily goals? Today's progress will be saved in the calendar."
+        onConfirm={handleReset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 }

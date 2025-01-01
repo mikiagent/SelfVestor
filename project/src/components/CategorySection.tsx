@@ -1,6 +1,8 @@
 import React from 'react';
 import { TodoList } from './TodoList';
 import { Todo, TodoCategory } from '../types/todo';
+import { ResetTimer } from './ResetTimer';
+import { useSettings } from '../hooks/useSettings';
 
 interface CategorySectionProps {
   title: string;
@@ -21,9 +23,14 @@ export function CategorySection({
   onDeleteTodo,
   onEditTodo
 }: CategorySectionProps) {
+  const { settings } = useSettings();
+
   return (
     <section>
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">{title}</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+        <ResetTimer category={category} settings={settings} />
+      </div>
       <TodoList
         todos={todos}
         category={category}
