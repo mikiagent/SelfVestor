@@ -16,10 +16,9 @@ export function useFirestore() {
       return;
     }
 
-    setLoading(true);
-    
-    // Initialize user data if it doesn't exist
-    const initializeData = async () => {
+    let unsubscribed = false;
+
+    const initializeUserData = async () => {
       try {
         await setUserData(user.uid, {
           settings: DEFAULT_SETTINGS,
@@ -28,33 +27,37 @@ export function useFirestore() {
           progressHistory: {}
         });
       } catch (err) {
-        console.error('Error initializing user data:', err);
-        setError(err as Error);
+        if (!unsubscribed) {
+          console.error('Error initializing user data:', err);
+          setError(err as Error);
+        }
       }
     };
 
     const unsubscribe = subscribeToUserData(user.uid, (newData) => {
-      if (!newData) {
-        initializeData();
-      } else {
-        setData(newData);
+      if (!unsubscribed) {
+        if (!newData) {
+          initializeUserData();
+        } else {
+          setData(newData);
+          setLoading(false);
+        }
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribed = true;
+      unsubscribe();
+    };
   }, [user]);
 
   const updateData = async (updates: Partial<UserData>) => {
     if (!user) return;
     try {
-      setLoading(true);
       await setUserData(user.uid, updates);
     } catch (err) {
       setError(err as Error);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
