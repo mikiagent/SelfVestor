@@ -29,7 +29,7 @@ export function CategorySection({
     <section>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-        <ResetTimer category={category} settings={settings} />
+        {settings && <ResetTimer category={category} settings={settings} />}
       </div>
       <TodoList
         todos={todos}

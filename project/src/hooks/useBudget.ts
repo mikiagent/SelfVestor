@@ -1,43 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { Transaction, BudgetSummary } from '../types/budget';
-
-const BUDGET_STORAGE_KEY = 'monthly-budget-transactions';
+import { useFirestore } from './useFirestore';
+import { 
+  serializeTransactions, 
+  deserializeTransactions 
+} from '../services/transactionService';
 
 export function useBudget() {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const stored = localStorage.getItem(BUDGET_STORAGE_KEY);
-    if (!stored) return [];
-    
-    try {
-      const parsed = JSON.parse(stored);
-      return parsed.map((t: any) => ({
-        ...t,
-        date: new Date(t.date)
-      }));
-    } catch (error) {
-      console.error('Error loading budget data:', error);
-      return [];
-    }
-  });
+  const { data, updateData } = useFirestore();
+  const transactions = deserializeTransactions(data?.transactions || []);
 
-  useEffect(() => {
-    localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(transactions));
-  }, [transactions]);
-
-  const addTransaction = (newTransaction: Omit<Transaction, 'id' | 'date'>) => {
+  const addTransaction = useCallback(async (newTransaction: Omit<Transaction, 'id' | 'date'>) => {
     const transaction: Transaction = {
       ...newTransaction,
       id: Date.now().toString(),
       date: new Date(),
     };
-    setTransactions(prev => [...prev, transaction]);
-  };
+    
+    const updatedTransactions = [...transactions, transaction];
+    await updateData({ 
+      transactions: serializeTransactions(updatedTransactions)
+    });
+  }, [transactions, updateData]);
 
-  const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
-  };
+  const deleteTransaction = useCallback(async (id: string) => {
+    const updatedTransactions = transactions.filter(t => t.id !== id);
+    await updateData({ 
+      transactions: serializeTransactions(updatedTransactions)
+    });
+  }, [transactions, updateData]);
 
-  const calculateBudgetSummary = (): BudgetSummary => {
+  const calculateBudgetSummary = useCallback((): BudgetSummary => {
     const totalIncome = transactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -67,7 +60,7 @@ export function useBudget() {
       expenseRatio,
       rentRatio
     };
-  };
+  }, [transactions]);
 
   return {
     transactions,

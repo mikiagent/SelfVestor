@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
-import { Settings } from '../types/settings';
+import { Settings, DEFAULT_SETTINGS } from '../types/settings';
 
 interface ResetTimerProps {
   category: 'daily' | 'weekly' | 'monthly';
-  settings: Settings;
+  settings?: Settings;
 }
 
-export function ResetTimer({ category, settings }: ResetTimerProps) {
+export function ResetTimer({ category, settings = DEFAULT_SETTINGS }: ResetTimerProps) {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {

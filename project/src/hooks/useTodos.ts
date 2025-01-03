@@ -1,32 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Todo, TodoCategory, Priority, Batch } from '../types/todo';
-import { saveTodos, loadTodos } from '../utils/storage';
-import { updateCurrentProgress } from '../utils/progressStorage';
-import { calculateProgress } from '../utils/progressCalculator';
-import { loadSettings } from '../utils/storage';
+import { useCallback } from 'react';
+import { Todo } from '../types/todo';
+import { useFirestore } from './useFirestore';
+import { serializeTodos, deserializeTodos } from '../services/todoService';
 
 export function useTodos() {
-  const [todos, setTodos] = useState<Todo[]>(() => loadTodos());
-  const settings = loadSettings();
+  const { data, updateData } = useFirestore();
+  const todos = deserializeTodos(data?.todos || []);
 
-  // Save todos whenever they change
-  const persistTodos = useCallback((updatedTodos: Todo[]) => {
-    saveTodos(updatedTodos);
-    const progress = calculateProgress(updatedTodos, settings);
-    updateCurrentProgress(progress.overall);
-  }, [settings]);
+  const persistTodos = useCallback(async (updatedTodos: Todo[]) => {
+    try {
+      await updateData({ 
+        todos: serializeTodos(updatedTodos)
+      });
+    } catch (error) {
+      console.error('Error persisting todos:', error);
+    }
+  }, [updateData]);
 
-  // Check for resets and save on mount and unmount
-  useEffect(() => {
-    const progress = calculateProgress(todos, settings);
-    updateCurrentProgress(progress.overall);
-
-    return () => {
-      persistTodos(todos);
-    };
-  }, [settings, persistTodos, todos]);
-
-  const addTodo = useCallback((
+  const addTodo = useCallback(async (
     title: string, 
     category: TodoCategory, 
     total: number,
@@ -60,11 +51,11 @@ export function useTodos() {
       createdAt: new Date()
     };
 
-    setTodos(prev => [...prev, newTodo]);
-  }, []);
+    await persistTodos([...todos, newTodo]);
+  }, [todos, persistTodos]);
 
-  const updateTodo = useCallback((id: string, batchId: string) => {
-    setTodos(prev => prev.map(todo => {
+  const updateTodo = useCallback(async (id: string, batchId: string) => {
+    const updatedTodos = todos.map(todo => {
       if (todo.id === id) {
         const updatedBatches = todo.batches.map(batch => 
           batch.id === batchId ? { ...batch, completed: true } : batch
@@ -80,11 +71,13 @@ export function useTodos() {
         };
       }
       return todo;
-    }));
-  }, []);
+    });
 
-  const undoBatch = useCallback((id: string, batchId: string) => {
-    setTodos(prev => prev.map(todo => {
+    await persistTodos(updatedTodos);
+  }, [todos, persistTodos]);
+
+  const undoBatch = useCallback(async (id: string, batchId: string) => {
+    const updatedTodos = todos.map(todo => {
       if (todo.id === id) {
         const updatedBatches = todo.batches.map(batch => 
           batch.id === batchId ? { ...batch, completed: false } : batch
@@ -100,32 +93,22 @@ export function useTodos() {
         };
       }
       return todo;
-    }));
-  }, []);
+    });
 
-  const editTodo = useCallback((id: string, updates: Partial<Todo>) => {
-    setTodos(prev => prev.map(todo => 
+    await persistTodos(updatedTodos);
+  }, [todos, persistTodos]);
+
+  const editTodo = useCallback(async (id: string, updates: Partial<Todo>) => {
+    const updatedTodos = todos.map(todo => 
       todo.id === id ? { ...todo, ...updates } : todo
-    ));
-  }, []);
+    );
+    await persistTodos(updatedTodos);
+  }, [todos, persistTodos]);
 
-  const deleteTodo = useCallback((id: string) => {
-    setTodos(prev => prev.filter(todo => todo.id !== id));
-  }, []);
-
-  const resetDailyGoals = useCallback(() => {
-    setTodos(prev => prev.map(todo => {
-      if (todo.category === 'daily') {
-        return {
-          ...todo,
-          batches: todo.batches.map(batch => ({ ...batch, completed: false })),
-          remaining: todo.total,
-          createdAt: new Date()
-        };
-      }
-      return todo;
-    }));
-  }, []);
+  const deleteTodo = useCallback(async (id: string) => {
+    const updatedTodos = todos.filter(todo => todo.id !== id);
+    await persistTodos(updatedTodos);
+  }, [todos, persistTodos]);
 
   return {
     todos,
@@ -133,7 +116,6 @@ export function useTodos() {
     updateTodo,
     undoBatch,
     deleteTodo,
-    editTodo,
-    resetDailyGoals
+    editTodo
   };
 }

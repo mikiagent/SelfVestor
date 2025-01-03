@@ -1,9 +1,10 @@
 import React, { memo, useState } from 'react';
-import { Undo2, Edit2, Trash2, DollarSign, CheckCircle } from 'lucide-react';
+import { Undo2, Edit2, Trash2, DollarSign, CheckCircle, Layers } from 'lucide-react';
 import { Todo } from '../types/todo';
 import { getPriorityDots, getPriorityLabel } from '../utils/priorityUtils';
 import { getStatusColor } from '../utils/statusColors';
 import { EditTodoDialog } from './EditTodoDialog';
+import { BatchEditDialog } from './BatchEditDialog';
 import { BatchProgress } from './BatchProgress';
 
 interface TodoItemProps {
@@ -24,6 +25,7 @@ export const TodoItem = memo(function TodoItem({
   onEdit
 }: TodoItemProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
 
   const currentBatchIndex = todo.batches.findIndex(batch => !batch.completed);
   const currentBatch = todo.batches[currentBatchIndex] || todo.batches[todo.batches.length - 1];
@@ -45,13 +47,37 @@ export const TodoItem = memo(function TodoItem({
     }
   };
 
+  const handleBatchEdit = ({ total, batchSize }: { total: number; batchSize: number }) => {
+    const batches = [];
+    let remaining = total;
+    let batchIndex = 0;
+
+    while (remaining > 0) {
+      const count = Math.min(remaining, batchSize);
+      batches.push({
+        id: `${Date.now()}-${batchIndex}`,
+        count,
+        completed: false
+      });
+      remaining -= count;
+      batchIndex++;
+    }
+
+    onEdit(todo.id, {
+      total,
+      batchSize,
+      batches,
+      remaining: total
+    });
+    setShowBatchDialog(false);
+  };
+
   const statusColor = getStatusColor(todo);
   const progress = ((todo.total - todo.remaining) / todo.total) * 100;
 
   return (
     <>
       <div className={`rounded-lg shadow-md mb-4 overflow-hidden ${statusColor}`}>
-        {/* Header */}
         <div className="p-4 bg-white bg-opacity-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -69,6 +95,13 @@ export const TodoItem = memo(function TodoItem({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBatchDialog(true)}
+                className="p-1 hover:bg-gray-100 rounded text-blue-600"
+                title="Edit batch settings"
+              >
+                <Layers size={18} />
+              </button>
               <button
                 onClick={handleUndoBatch}
                 disabled={!todo.batches.some(batch => batch.completed)}
@@ -92,7 +125,6 @@ export const TodoItem = memo(function TodoItem({
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
               className={`h-full transition-all duration-300 ${
@@ -102,7 +134,6 @@ export const TodoItem = memo(function TodoItem({
             />
           </div>
 
-          {/* Batch progress */}
           <BatchProgress
             batches={todo.batches}
             batchSize={todo.batchSize}
@@ -110,7 +141,6 @@ export const TodoItem = memo(function TodoItem({
           />
         </div>
 
-        {/* Complete batch button */}
         {!isComplete && (
           <button
             onClick={handleCompleteBatch}
@@ -133,6 +163,14 @@ export const TodoItem = memo(function TodoItem({
             setShowEditDialog(false);
           }}
           onClose={() => setShowEditDialog(false)}
+        />
+      )}
+
+      {showBatchDialog && (
+        <BatchEditDialog
+          todo={todo}
+          onSave={handleBatchEdit}
+          onClose={() => setShowBatchDialog(false)}
         />
       )}
     </>

@@ -22,7 +22,10 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow">
+    <div 
+      className="flex items-center justify-between p-4 bg-white rounded-lg shadow"
+      data-tutorial="transaction-item"
+    >
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-gray-800">{transaction.description}</h3>

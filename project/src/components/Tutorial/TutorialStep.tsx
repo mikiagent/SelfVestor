@@ -9,7 +9,6 @@ interface TutorialStepProps {
   onSkip: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
-  canProceed: boolean;
 }
 
 export function TutorialStep({
@@ -19,8 +18,7 @@ export function TutorialStep({
   onPrevious,
   onSkip,
   isFirstStep,
-  isLastStep,
-  canProceed
+  isLastStep
 }: TutorialStepProps) {
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[60]">
@@ -52,13 +50,10 @@ export function TutorialStep({
             
             <button
               onClick={isLastStep ? onSkip : onNext}
-              disabled={!isLastStep && !canProceed}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors ${
                 isLastStep 
                   ? 'bg-green-200 hover:bg-green-300 text-green-800' 
-                  : canProceed 
-                    ? 'bg-blue-200 hover:bg-blue-300 text-blue-800' 
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-200 hover:bg-blue-300 text-blue-800'
               }`}
             >
               {isLastStep ? 'Finish' : 'Next'}

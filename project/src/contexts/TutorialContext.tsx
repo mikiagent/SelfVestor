@@ -7,7 +7,6 @@ interface TutorialStep {
   element: string;
   message: string;
   position: 'top' | 'bottom' | 'left' | 'right';
-  requiredAction?: () => boolean;
 }
 
 interface TutorialContextType {
@@ -18,7 +17,6 @@ interface TutorialContextType {
   nextStep: () => void;
   previousStep: () => void;
   skipTutorial: () => void;
-  canProceedToNextStep: boolean;
 }
 
 const TutorialContext = createContext<TutorialContextType | null>(null);
@@ -29,16 +27,14 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     route: '/dashboard/goals',
     element: '[data-tutorial="add-goal"]',
     message: "Let's start by creating your first goal! Fill out the form below to add a goal.",
-    position: 'bottom',
-    requiredAction: () => document.querySelectorAll('[data-todo-item]').length > 0
+    position: 'bottom'
   },
   {
     id: 'add-transaction',
     route: '/dashboard/budget',
     element: '[data-tutorial="add-transaction"]',
-    message: "Great! Now let's set up your monthly budget. Add your income and expenses to start tracking.",
-    position: 'bottom',
-    requiredAction: () => document.querySelectorAll('[data-transaction-item]').length > 0
+    message: "Now let's set up your monthly budget. Add your income and expenses here to start tracking your progress.",
+    position: 'top'
   }
 ];
 
@@ -51,20 +47,25 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     if (isActive) {
       navigate(TUTORIAL_STEPS[currentStep].route);
       
-      // Scroll to tutorial element with a delay to ensure DOM is ready
       const timeoutId = setTimeout(() => {
         const element = document.querySelector(TUTORIAL_STEPS[currentStep].element);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center'
+          });
+          element.classList.add('tutorial-highlight');
         }
-      }, 300);
+      }, 500);
 
-      return () => clearTimeout(timeoutId);
+      return () => {
+        clearTimeout(timeoutId);
+        document.querySelectorAll('.tutorial-highlight').forEach(el => {
+          el.classList.remove('tutorial-highlight');
+        });
+      };
     }
   }, [currentStep, isActive, navigate]);
-
-  const canProceedToNextStep = !TUTORIAL_STEPS[currentStep].requiredAction || 
-    TUTORIAL_STEPS[currentStep].requiredAction();
 
   const startTutorial = () => {
     setCurrentStep(0);
@@ -72,8 +73,6 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   };
 
   const nextStep = () => {
-    if (!canProceedToNextStep) return;
-
     if (currentStep < TUTORIAL_STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
@@ -93,18 +92,15 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <TutorialContext.Provider
-      value={{
-        currentStep,
-        steps: TUTORIAL_STEPS,
-        isActive,
-        startTutorial,
-        nextStep,
-        previousStep,
-        skipTutorial,
-        canProceedToNextStep
-      }}
-    >
+    <TutorialContext.Provider value={{
+      currentStep,
+      steps: TUTORIAL_STEPS,
+      isActive,
+      startTutorial,
+      nextStep,
+      previousStep,
+      skipTutorial
+    }}>
       {children}
     </TutorialContext.Provider>
   );

@@ -3,13 +3,20 @@ import { BudgetSummary } from './BudgetSummary';
 import { TransactionList } from './TransactionList';
 import { AddTransactionForm } from './AddTransactionForm';
 import { SpendingAllowance } from './SpendingAllowance';
+import { LoadingSpinner } from '../LoadingSpinner';
 import { useBudget } from '../../hooks/useBudget';
+import { useFirestore } from '../../hooks/useFirestore';
 import { calculateSpendingAllowance } from '../../utils/spendingCalculator';
 
 export function BudgetPage() {
   const { transactions, addTransaction, deleteTransaction, budgetSummary } = useBudget();
   const [showChart, setShowChart] = useState(true);
   const spendingAllowance = calculateSpendingAllowance(budgetSummary.spendingBudget);
+  const { loading } = useFirestore();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">

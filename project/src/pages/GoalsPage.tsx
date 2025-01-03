@@ -5,15 +5,22 @@ import { ProgressSection } from '../components/ProgressSection';
 import { CategorySection } from '../components/CategorySection';
 import { GoalsHeader } from '../components/GoalsHeader';
 import { Calendar } from '../components/Calendar/Calendar';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTodos } from '../hooks/useTodos';
 import { useBudget } from '../hooks/useBudget';
 import { useSettings } from '../hooks/useSettings';
+import { useFirestore } from '../hooks/useFirestore';
 import { calculateProgress } from '../utils/progressCalculator';
 
 export function GoalsPage() {
   const { todos, addTodo, updateTodo, undoBatch, deleteTodo, editTodo } = useTodos();
   const { budgetSummary } = useBudget();
   const { settings } = useSettings();
+  const { loading } = useFirestore();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6">

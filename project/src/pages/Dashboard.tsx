@@ -16,8 +16,7 @@ export function Dashboard() {
     steps, 
     nextStep, 
     previousStep, 
-    skipTutorial, 
-    canProceedToNextStep 
+    skipTutorial
   } = useTutorial();
 
   if (!user) {
@@ -38,7 +37,6 @@ export function Dashboard() {
               onSkip={skipTutorial}
               isFirstStep={currentStep === 0}
               isLastStep={currentStep === steps.length - 1}
-              canProceed={canProceedToNextStep}
             />
           </TutorialOverlay>
         )}
